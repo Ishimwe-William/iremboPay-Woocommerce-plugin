@@ -25,7 +25,7 @@ class WC_IremboPay_API {
                     'unitAmount' => intval($order->get_total())
                 ]
             ],
-            'description' => sprintf('Order %s on %s', $order->get_order_number(), get_bloginfo('name')),
+            'description' => sprintf('Order #%s on %s', $order->get_order_number(), get_bloginfo('name')),
             'expiryAt' => gmdate('Y-m-d\TH:i:s\Z', strtotime('+1 day')),
             'language' => 'EN',
             'customer' => [
