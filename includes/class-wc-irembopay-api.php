@@ -38,6 +38,20 @@ class WC_IremboPay_API {
         return $this->make_request('payments/invoices', 'POST', $body);
     }
 
+    /**
+     * Get invoice details by invoice number
+     *
+     * @param string $invoice_number
+     * @return array|false
+     */
+    public function get_invoice($invoice_number) {
+        if (empty($invoice_number)) {
+            return false;
+        }
+
+        return $this->make_request("payments/invoices/{$invoice_number}", 'GET');
+    }
+
     private function make_request($endpoint, $method = 'POST', $data = []) {
         $url = $this->api_base_url . ltrim($endpoint, '/');
         $headers = [
@@ -55,7 +69,7 @@ class WC_IremboPay_API {
             'sslverify' => true
         ];
 
-        if (!empty($data)) {
+        if (!empty($data) && in_array($method, ['POST', 'PUT', 'PATCH'])) {
             $args['body'] = json_encode($data);
         }
 
