@@ -10,8 +10,6 @@ A secure WordPress plugin that integrates IremboPay payment gateway with WooComm
 - 🔄 **Automatic Status Updates**: Real-time payment status via webhooks
 - 📊 **Admin Dashboard**: Payment details and invoice management
 - ⏰ **Payment Expiry**: 24-hour payment link expiration with countdown
-- 🌍 **Localization Ready**: Translation support
-- 📱 **Responsive**: Mobile-friendly payment interface
 
 ## Requirements
 
@@ -39,7 +37,7 @@ A secure WordPress plugin that integrates IremboPay payment gateway with WooComm
 
 ### 1. Get IremboPay API Credentials
 
-1. Log in to your [IremboPay Merchant Portal](https://merchant.irembopay.com/)
+1. Log in to your [IremboPay Merchant Portal](https://dashboard.irembopay.com/)
 2. Navigate to **API Settings**
 3. Copy your:
     - Secret Key
