@@ -5,6 +5,7 @@
         init: function() {
             this.form = $('form.checkout');
             this.addCheckoutStyling();
+            this.loadIremboPayScript();
         },
 
         addCheckoutStyling: function() {
