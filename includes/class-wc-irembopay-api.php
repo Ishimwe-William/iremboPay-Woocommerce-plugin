@@ -66,6 +66,7 @@ class WC_IremboPay_API {
             'method' => $method,
             'headers' => $headers,
             'timeout' => 30,
+            'connect_timeout' => 10,
             'sslverify' => true
         ];
 
@@ -81,6 +82,12 @@ class WC_IremboPay_API {
         }
 
         $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (!is_array($body)) {
+            $this->log('Invalid JSON response from API', 'error');
+            return ['success' => false, 'message' => 'Invalid API response'];
+        }
+
         $status_code = wp_remote_retrieve_response_code($response);
 
         if ($status_code >= 400) {

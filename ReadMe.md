@@ -79,14 +79,14 @@ A secure WordPress plugin that integrates IremboPay payment gateway with WooComm
 ### 3. Webhook Configuration
 
 #### For Test Mode (Sandbox)
-1. In your IremboPay sandbox portal, set the webhook URL to:
+1. In your IremboPay sandbox portal, set the webhook/callback URL to:
    ```
    https://yoursite.com/wc-api/wc_irembopay_gateway
    ```
 2. Enable webhook notifications for payment status updates
 
 #### For Production (Live)
-1. In your IremboPay live merchant portal, set the same webhook URL:
+1. In your IremboPay live merchant portal, set the same webhook/callback URL:
    ```
    https://yoursite.com/wc-api/wc_irembopay_gateway
    ```

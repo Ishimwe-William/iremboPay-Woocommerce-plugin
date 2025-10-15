@@ -50,22 +50,28 @@ class WC_IremboPay_Gateway extends WC_Payment_Gateway {
             $this->log("Reusing existing invoice: {$invoice_number} for order {$order_id}");
         } else {
             // Create new invoice
-            $invoice = $this->api->create_invoice($order, $this->payment_account, $this->generic_product_code);
+            try {
+                $invoice = $this->api->create_invoice($order, $this->payment_account, $this->generic_product_code);
+            } catch (Exception $e) {
+                $this->log('Invoice creation exception: ' . $e->getMessage(), 'error');
+                wc_add_notice(__('Payment system temporarily unavailable. Please try again.', 'wc-irembopay'), 'error');
+                return ['result' => 'failure'];
+            }
 
-            if (!$invoice || empty($invoice['data']['invoiceNumber'])) {
+            if (!$invoice || !isset($invoice['data']['invoiceNumber']) || empty($invoice['data']['invoiceNumber'])) {
                 wc_add_notice(__('Could not create IremboPay invoice: ', 'wc-irembopay') . ($invoice['message'] ?? 'Unknown error'), 'error');
                 return ['result' => 'failure'];
             }
 
             $invoice_number = $invoice['data']['invoiceNumber'];
             $order->update_meta_data('_irembopay_invoice_number', $invoice_number);
-            
+
             // Store expiry time when creating invoice
             $expiry_time = $this->calculate_payment_expiry($order);
             $order->update_meta_data('_irembopay_expiry_at', $expiry_time);
-            
+
             $order->save();
-            
+
             $this->log("Created new invoice: {$invoice_number} for order {$order_id}");
         }
 
@@ -83,7 +89,7 @@ class WC_IremboPay_Gateway extends WC_Payment_Gateway {
      */
     private function get_existing_valid_invoice($order) {
         $invoice_number = $order->get_meta('_irembopay_invoice_number');
-        
+
         if (!$invoice_number) {
             return false;
         }
@@ -95,23 +101,36 @@ class WC_IremboPay_Gateway extends WC_Payment_Gateway {
         }
 
         // Check if invoice is still valid via API
-        $invoice_data = $this->api->get_invoice($invoice_number);
-        
-        if (!$invoice_data || !$invoice_data['success']) {
+        try {
+            $invoice_data = $this->api->get_invoice($invoice_number);
+            if (!$invoice_data || !isset($invoice_data['success']) || !$invoice_data['success']) {
+                return false;
+            }
+        } catch (Exception $e) {
+            $this->log("Invoice check failed: " . $e->getMessage(), 'error');
+            return false;
+        }
+
+        // Validate data structure
+        if (!isset($invoice_data['data']) || !is_array($invoice_data['data'])) {
+            $this->log("Invoice {$invoice_number} has invalid data structure");
             return false;
         }
 
         $invoice_info = $invoice_data['data'];
-        
+
         // Check if invoice is not yet paid and not expired
-        if ($invoice_info['paymentStatus'] !== 'NEW') {
-            $this->log("Invoice {$invoice_number} already processed: {$invoice_info['paymentStatus']}");
+        if (!isset($invoice_info['paymentStatus']) || $invoice_info['paymentStatus'] !== 'NEW') {
+            $this->log("Invoice {$invoice_number} already processed: " . ($invoice_info['paymentStatus'] ?? 'unknown'));
             return false;
         }
 
         // Verify invoice amount matches current order total
-        if (intval($invoice_info['amount']) !== intval($order->get_total())) {
-            $this->log("Invoice {$invoice_number} amount mismatch: {$invoice_info['amount']} vs {$order->get_total()}");
+        $api_amount = isset($invoice_info['amount']) ? floatval($invoice_info['amount']) : 0;
+        $order_amount = floatval($order->get_total());
+
+        if (abs($api_amount - $order_amount) > 0.01) { // Allow 1 cent difference
+            $this->log("Invoice {$invoice_number} amount mismatch: {$api_amount} vs {$order_amount}");
             return false;
         }
 
@@ -139,17 +158,18 @@ class WC_IremboPay_Gateway extends WC_Payment_Gateway {
 
         // Double-check invoice validity on receipt page
         $invoice_data = $this->api->get_invoice($invoice_number);
-        if (!$invoice_data || !$invoice_data['success'] || $invoice_data['data']['paymentStatus'] !== 'NEW') {
+        if (!$invoice_data || !isset($invoice_data['success']) || !$invoice_data['success'] ||
+            !isset($invoice_data['data']['paymentStatus']) || $invoice_data['data']['paymentStatus'] !== 'NEW') {
             // If invoice is no longer valid, create a new one
             $new_invoice = $this->api->create_invoice($order, $this->payment_account, $this->generic_product_code);
-            if ($new_invoice && !empty($new_invoice['data']['invoiceNumber'])) {
+            if ($new_invoice && isset($new_invoice['data']['invoiceNumber']) && !empty($new_invoice['data']['invoiceNumber'])) {
                 $invoice_number = $new_invoice['data']['invoiceNumber'];
                 $order->update_meta_data('_irembopay_invoice_number', $invoice_number);
-                
+
                 // Update expiry time for new invoice
                 $expiry_time = $this->calculate_payment_expiry($order);
                 $order->update_meta_data('_irembopay_expiry_at', $expiry_time);
-                
+
                 $order->save();
                 $this->log("Created replacement invoice: {$invoice_number} for order {$order_id}");
             } else {
@@ -244,6 +264,7 @@ class WC_IremboPay_Gateway extends WC_Payment_Gateway {
             function initiatePayment() {
                 if (typeof IremboPay === 'undefined') {
                     console.error('IremboPay script not loaded');
+                    alert('<?php echo esc_js(__('Payment system error. Please refresh the page.', 'wc-irembopay')); ?>');
                     return;
                 }
 
@@ -254,7 +275,9 @@ class WC_IremboPay_Gateway extends WC_Payment_Gateway {
                     callback: function(err, resp) {
                         if (!err) {
                             // Success: Close the modal and redirect to thank-you page
-                            IremboPay.closeModal();
+                            if (typeof IremboPay.closeModal === 'function') {
+                                IremboPay.closeModal();
+                            }
                             window.location.href = "<?php echo esc_url($order->get_checkout_order_received_url()); ?>";
                         } else {
                             // Error: Log and redirect to orders page (widget may auto-close on error)
@@ -268,8 +291,8 @@ class WC_IremboPay_Gateway extends WC_Payment_Gateway {
                 });
             }
 
-            // Auto-initiate payment when page loads
-            initiatePayment();
+            // Auto-initiate payment when page loads with slight delay for script loading
+            setTimeout(initiatePayment, 1000);
 
             // Add manual trigger button
             window.manualPayment = initiatePayment;
