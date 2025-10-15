@@ -242,20 +242,28 @@ class WC_IremboPay_Gateway extends WC_Payment_Gateway {
         <script>
         document.addEventListener('DOMContentLoaded', function() {
             function initiatePayment() {
+                if (typeof IremboPay === 'undefined') {
+                    console.error('IremboPay script not loaded');
+                    return;
+                }
+
                 IremboPay.initiate({
                     publicKey: "<?php echo esc_js($public_key); ?>",
                     invoiceNumber: "<?php echo esc_js($invoice_number); ?>",
                     locale: IremboPay.locale.EN,
                     callback: function(err, resp) {
-                        if (resp && (resp.status === 'PAID' || resp.paymentStatus === 'PAID')) {
-                            // Payment successful - redirect to orders page
-                            window.location.href = "<?php echo esc_url($my_account_orders_url); ?>";
-                        } else if (err || resp.status === 'FAILED') {
-                            // Payment failed or cancelled - redirect to orders
-                            console.log('Payment error or cancelled:', err || resp);
+                        if (!err) {
+                            // Success: Close the modal and redirect to thank-you page
+                            IremboPay.closeModal();
+                            window.location.href = "<?php echo esc_url($order->get_checkout_order_received_url()); ?>";
+                        } else {
+                            // Error: Log and redirect to orders page (widget may auto-close on error)
+                            console.error('Payment error:', err);
+                            if (typeof IremboPay.closeModal === 'function') {
+                                IremboPay.closeModal();
+                            }
                             window.location.href = "<?php echo esc_url($my_account_orders_url); ?>";
                         }
-                        // If neither condition is met, stay on current page
                     }
                 });
             }

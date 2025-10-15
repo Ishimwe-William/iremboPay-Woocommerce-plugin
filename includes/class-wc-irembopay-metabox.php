@@ -411,7 +411,7 @@ class WC_IremboPay_Metabox {
                     button.style.color = "";
                 }, 2000);
             } catch (err) {
-                console.log("Copy failed:", err);
+                console.error("Copy failed:", err);
             }
         }
         </script>';

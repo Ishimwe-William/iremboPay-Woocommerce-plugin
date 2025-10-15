@@ -23,9 +23,9 @@
                     'https://dashboard.sandbox.irembopay.com/assets/payment/inline.js' :
                     'https://dashboard.irembopay.com/assets/payment/inline.js';
                 script.async = true;
-                script.onload = function() {
-                    console.log('IremboPay script loaded');
-                };
+                // script.onload = function() {
+                //     console.log('IremboPay script loaded');
+                // };
                 script.onerror = function() {
                     console.error('Failed to load IremboPay script');
                 };
@@ -36,9 +36,9 @@
 
     $(document).ready(function() {
         IremboPayCheckout.init();
-        if (typeof wc_irembopay_params !== 'undefined') {
-            console.log('IremboPay payment gateway loaded');
-        }
+        // if (typeof wc_irembopay_params !== 'undefined') {
+        //     console.log('IremboPay payment gateway loaded');
+        // }
     });
 
 })(jQuery);
