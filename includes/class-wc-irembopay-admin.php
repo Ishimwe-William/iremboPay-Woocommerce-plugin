@@ -18,7 +18,7 @@ class WC_IremboPay_Admin {
             'description' => [
                 'title' => __('Description', 'wc-irembopay'),
                 'type' => 'textarea',
-                'default' => __('Pay securely using IremboPay.', 'wc-irembopay')
+                'default' => __('Pay securely with IremboPay using Mobile Money (MTN, Airtel), Credit/Debit Cards, or Bank Transfer.', 'wc-irembopay')
             ],
             'testmode' => [
                 'title' => __('Test mode', 'wc-irembopay'),

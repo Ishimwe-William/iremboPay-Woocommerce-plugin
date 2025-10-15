@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WooCommerce IremboPay Gateway
  * Description: Accept payments through IremboPay in your WooCommerce store.
- * Version: 1.0.9
+ * Version: 1.1.0
  * Author: William Ishimwe
  * Requires at least: 5.0
  * Requires PHP: 7.4
@@ -11,7 +11,7 @@
 defined('ABSPATH') || exit;
 
 // Define plugin constants
-define('WC_IREMBOPAY_VERSION', '1.0.9');
+define('WC_IREMBOPAY_VERSION', '1.1.0');
 define('WC_IREMBOPAY_PATH', plugin_dir_path(__FILE__));
 define('WC_IREMBOPAY_URL', plugin_dir_url(__FILE__));
 
