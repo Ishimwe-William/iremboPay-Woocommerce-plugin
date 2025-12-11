@@ -15,7 +15,7 @@ A secure WordPress plugin that integrates IremboPay payment gateway with WooComm
 
 - WordPress 5.0+
 - WooCommerce 3.0+
-- PHP 7.4+
+- PHP 8
 - IremboPay merchant account
 
 ## Installation
@@ -347,9 +347,8 @@ This plugin is licensed under the [GPL v2 or later](https://www.gnu.org/licenses
 ## Credits
 
 **Author**: William Ishimwe  
-**Version**: 1.0.9  
-**Requires**: WordPress 5.0+, WooCommerce 3.0+, PHP 7.4+
-
+**Version**: 1.1.1  
+**Requires**: WordPress 5.0+, WooCommerce 3.0+, PHP 8
 ---
 
 **Disclaimer**: This plugin is not officially affiliated with IremboPay. Please test thoroughly in sandbox mode before using in production.

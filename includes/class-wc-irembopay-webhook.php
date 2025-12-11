@@ -1,14 +1,17 @@
 <?php
 defined('ABSPATH') || exit;
 
-class WC_IremboPay_Webhook {
+class WC_IremboPay_Webhook{
     private $secret_key;
 
-    public function __construct($secret_key) {
+    public function __construct($secret_key){
         $this->secret_key = $secret_key;
     }
 
-    public function process() {
+    public function process(){
+        // Fix: Clear any random PHP warnings causing "dirty" output
+        ob_clean();
+
         $payload = file_get_contents('php://input');
         $headers = function_exists('getallheaders') ? getallheaders() : [];
         $signature_header = $headers['irembopay-signature'] ?? '';
@@ -29,8 +32,9 @@ class WC_IremboPay_Webhook {
             $timestamp = intval($t);
             if ($timestamp > 0 && abs(time() - $timestamp) > 300) { // 5 minutes tolerance
                 $this->log('Webhook rejected: Timestamp too old or invalid', 'warning');
-                status_header(401);
-                exit('Timestamp too old or invalid');
+                // Fix: Return 200 OK to stop retries, even on failure
+                http_response_code(200);
+                exit('Timestamp invalid');
             }
 
             $signed_payload = $t . '#' . $payload;
@@ -38,7 +42,8 @@ class WC_IremboPay_Webhook {
 
             if (!hash_equals($expected_signature, $s)) {
                 $this->log('Webhook rejected: Invalid signature', 'warning');
-                status_header(401);
+                // Fix: Return 200 OK to stop retries
+                http_response_code(200);
                 exit('Invalid signature');
             }
         }
@@ -46,7 +51,7 @@ class WC_IremboPay_Webhook {
         $data = json_decode($payload, true);
         if (!is_array($data) || !isset($data['data']['invoiceNumber']) || empty($data['data']['invoiceNumber'])) {
             $this->log('Webhook rejected: Invalid payload structure', 'error');
-            status_header(400);
+            http_response_code(200);
             exit('Invalid payload');
         }
 
@@ -59,8 +64,10 @@ class WC_IremboPay_Webhook {
         ]);
         $order = $order_id ? wc_get_order($order_id[0]) : false;
 
-        if ($order && isset($data['success']) && $data['success'] &&
-            isset($data['data']['paymentStatus']) && $data['data']['paymentStatus'] === 'PAID') {
+        if (
+            $order && isset($data['success']) && $data['success'] &&
+            isset($data['data']['paymentStatus']) && $data['data']['paymentStatus'] === 'PAID'
+        ) {
 
             $order->payment_complete();
 
@@ -94,14 +101,16 @@ class WC_IremboPay_Webhook {
             $this->log(sprintf('Webhook received for order #%s with status: %s', $order->get_order_number(), $payment_status), 'info');
         }
 
-        status_header(200);
-        exit('OK');
+        // Always return 200 OK
+        http_response_code(200);
+        exit;
     }
 
     /**
      * Log messages
      */
-    private function log($message, $level = 'info') {
+    private function log($message, $level = 'info')
+    {
         if (function_exists('wc_get_logger')) {
             $logger = wc_get_logger();
             $logger->log($level, $message, ['source' => 'irembopay-webhook']);

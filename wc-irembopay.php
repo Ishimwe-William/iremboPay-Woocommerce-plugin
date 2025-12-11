@@ -2,10 +2,10 @@
 /**
  * Plugin Name: WooCommerce IremboPay Gateway
  * Description: Accept payments through IremboPay in your WooCommerce store.
- * Version: 1.1.0
+ * Version: 1.1.1
  * Author: William Ishimwe
  * Requires at least: 5.0
- * Requires PHP: 7.4
+ * Requires PHP: 8.0
  */
 
 defined('ABSPATH') || exit;
@@ -60,12 +60,12 @@ function wc_irembopay_is_woocommerce_active() {
     if (!class_exists('WooCommerce')) {
         return false;
     }
-    
+
     // Check WooCommerce version if needed
     if (defined('WC_VERSION') && version_compare(WC_VERSION, '3.0', '<')) {
         return false;
     }
-    
+
     return true;
 }
 
@@ -74,6 +74,8 @@ function wc_irembopay_is_woocommerce_active() {
  */
 add_action('plugins_loaded', 'wc_irembopay_init', 11);
 function wc_irembopay_init() {
+    load_plugin_textdomain( 'woocommerce-irembopay', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+
     // Check WooCommerce dependency
     if (!wc_irembopay_is_woocommerce_active()) {
         add_action('admin_notices', 'wc_irembopay_woocommerce_missing_notice');
@@ -89,7 +91,7 @@ function wc_irembopay_init() {
 
     // Register payment gateway
     add_filter('woocommerce_payment_gateways', 'wc_irembopay_add_gateway');
-    
+
     // Initialize other hooks
     wc_irembopay_init_hooks();
 }
@@ -108,7 +110,7 @@ function wc_irembopay_add_gateway($gateways) {
 function wc_irembopay_init_hooks() {
     // Enqueue scripts for checkout
     add_action('wp_enqueue_scripts', 'wc_irembopay_enqueue_checkout_scripts');
-    
+
     // Initialize metabox functionality
     new WC_IremboPay_Metabox();
 }
@@ -120,7 +122,7 @@ function wc_irembopay_enqueue_checkout_scripts() {
     if (!is_checkout()) {
         return;
     }
-    
+
     wp_enqueue_script(
         'irembopay-checkout',
         WC_IREMBOPAY_URL . 'assets/js/irembopay-checkout.js',
@@ -128,10 +130,10 @@ function wc_irembopay_enqueue_checkout_scripts() {
         WC_IREMBOPAY_VERSION,
         true
     );
-    
+
     $gateways = WC()->payment_gateways->get_available_payment_gateways();
     $irembopay_gateway = isset($gateways['irembopay']) ? $gateways['irembopay'] : null;
-    
+
     if ($irembopay_gateway) {
         wp_localize_script('irembopay-checkout', 'wc_irembopay_params', [
             'public_key' => $irembopay_gateway->public_key,

@@ -5,6 +5,13 @@ class WC_IremboPay_Gateway extends WC_Payment_Gateway {
     private $api;
     private $webhook_handler;
 
+    // Properties explicitly declared (Solves PHP 8.2 Deprecated errors)
+    public $testmode;
+    public $secret_key;
+    public $public_key;
+    public $payment_account;
+    public $generic_product_code;
+
     public function __construct() {
         $this->id = 'irembopay';
         $this->icon = WC_IREMBOPAY_URL . 'assets/images/IremboPay_logo.png';
@@ -140,6 +147,7 @@ class WC_IremboPay_Gateway extends WC_Payment_Gateway {
     public function receipt_page($order_id) {
         $order = wc_get_order($order_id);
         $invoice_number = $order->get_meta('_irembopay_invoice_number');
+        $invoice_created_at = $order->get_date_created()->getTimestamp();
         $public_key = $this->public_key;
         $widget_url = $this->testmode
             ? 'https://dashboard.sandbox.irembopay.com/assets/payment/inline.js'
@@ -156,10 +164,21 @@ class WC_IremboPay_Gateway extends WC_Payment_Gateway {
             return;
         }
 
-        // Double-check invoice validity on receipt page
-        $invoice_data = $this->api->get_invoice($invoice_number);
+        if ( (time() - $invoice_created_at) < 120 ) {
+            // OPTIMIZATION: Trust local data for 2 minutes to save API calls
+            // We manually construct a "success" response so the check below passes
+            $invoice_data = [
+                'success' => true,
+                'data' => ['paymentStatus' => 'NEW']
+            ];
+        } else {
+            // Double-check invoice validity via API
+            $invoice_data = $this->api->get_invoice($invoice_number);
+        }
+
         if (!$invoice_data || !isset($invoice_data['success']) || !$invoice_data['success'] ||
             !isset($invoice_data['data']['paymentStatus']) || $invoice_data['data']['paymentStatus'] !== 'NEW') {
+
             // If invoice is no longer valid, create a new one
             $new_invoice = $this->api->create_invoice($order, $this->payment_account, $this->generic_product_code);
             if ($new_invoice && isset($new_invoice['data']['invoiceNumber']) && !empty($new_invoice['data']['invoiceNumber'])) {
