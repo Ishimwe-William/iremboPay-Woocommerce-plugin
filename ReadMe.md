@@ -90,6 +90,11 @@ A secure WordPress plugin that integrates IremboPay payment gateway with WooComm
    ```
    https://yoursite.com/wc-api/wc_irembopay_gateway
    ```
+   
+If you are encountering `301` http error, you may try adding `www` to your callback URL. It can look like this:
+```
+https://www.yoursite.com/wc-api/wc_irembopay_gateway
+```
 2. Enable webhook notifications for payment status updates
 
 **Note:** The webhook URL remains the same for both modes. The plugin automatically handles requests based on your configured mode.

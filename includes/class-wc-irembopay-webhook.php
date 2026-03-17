@@ -30,6 +30,12 @@ class WC_IremboPay_Webhook{
 
             // Validate timestamp to prevent replay attacks
             $timestamp = intval($t);
+
+            // Fix: If IremboPay sends milliseconds (13 digits), convert to seconds
+            if (strlen((string)$timestamp) === 13) {
+                $timestamp = intval($timestamp / 1000);
+            }
+
             if ($timestamp > 0 && abs(time() - $timestamp) > 300) { // 5 minutes tolerance
                 $this->log('Webhook rejected: Timestamp too old or invalid', 'warning');
                 // Fix: Return 200 OK to stop retries, even on failure
